@@ -2,19 +2,17 @@
 // use std::str};
 
 use base64::encode;
-use futures::StreamExt;
 use std::future::Future;
 
 use hyper::{
     header::{self, HeaderValue},
     http,
-    service::{make_service_fn, service_fn},
     upgrade::Upgraded,
-    Body, Response, Server, StatusCode,
+    Body, Response, StatusCode,
 };
 use sha1::Digest;
 use tokio::task::JoinError;
-use tokio_tungstenite::{tungstenite::protocol::Role, WebSocketStream};
+use tokio_tungstenite::tungstenite::protocol::Role;
 
 use anyhow::Result;
 use log::*;
@@ -53,7 +51,7 @@ fn upgrade_connection(
 
 /// Handle a WS handshake and create a tokio_tungstenite stream
 /// Based off of the [Mozilla docs](https://developer.mozilla.org/en-US/docs/Web/API/WebSockets_API/Writing_WebSocket_servers#the_websocket_handshake) on WebSocket servers.
-pub async fn create_ws(
+pub fn create_ws(
     req: hyper::Request<hyper::Body>,
 ) -> http::Result<(
     hyper::Response<hyper::Body>,
@@ -122,30 +120,25 @@ pub async fn create_ws(
     Ok((res, None))
 }
 
-async fn idle_stream(mut stream: WebSocketStream<Upgraded>) {
-    debug!("idling stream");
-
-    while let Some(Ok(message)) = stream.next().await {
-        debug!("Message: {:?}", message);
-    }
-}
-
 #[cfg(test)]
 mod tests {
+    use super::*;
+
     use std::net::SocketAddr;
 
-    use futures::SinkExt;
+    use futures::{SinkExt, StreamExt};
     use http::request::Builder;
-    use hyper::{Client, Method, Request, Version};
+    use hyper::{
+        service::{make_service_fn, service_fn},
+        Client, Method, Request, Version,
+    };
     use tokio_tungstenite::{connect_async, tungstenite::Message};
-
-    use super::*;
 
     /// Our server HTTP handler to initiate HTTP upgrades.
     async fn ws_listener(req: Request<Body>) -> http::Result<Response<Body>> {
         trace!("{:?}", req);
 
-        let (res, ws_fut) = match create_ws(req).await {
+        let (res, ws_fut) = match create_ws(req) {
             Ok(t) => t,
             Err(e) => {
                 error!("error creating ws stream: {:?}", e);
@@ -158,8 +151,10 @@ mod tests {
 
         if let Some(ws_fut) = ws_fut {
             tokio::task::spawn(async move {
-                if let Ok(Ok(stream)) = ws_fut.await {
-                    idle_stream(stream).await;
+                if let Ok(Ok(mut stream)) = ws_fut.await {
+                    while let Some(Ok(message)) = stream.next().await {
+                        debug!("server rx: {:?}", message);
+                    }
                 }
             });
         }
