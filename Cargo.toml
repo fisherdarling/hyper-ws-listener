@@ -5,9 +5,9 @@ authors = ["Fisher Darling <fdarlingco@gmail.com>"]
 edition = "2018"
 
 
-[[bin]]
-name = "test"
-path = "./src/test.rs"
+# [[bin]]
+# name = "test"
+# path = "./src/test.rs"
 
 
 [dependencies]
@@ -20,3 +20,8 @@ sha-1 = "*"
 base64 = "*"
 log = "*"
 futures = "*"
+
+[dev-dependencies]
+once_cell = "*"
+rand = "*"
+http = "*"
