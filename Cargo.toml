@@ -1,0 +1,22 @@
+[package]
+name = "hyper-ws-listener"
+version = "0.1.0"
+authors = ["Fisher Darling <fdarlingco@gmail.com>"]
+edition = "2018"
+
+
+[[bin]]
+name = "test"
+path = "./src/test.rs"
+
+
+[dependencies]
+env_logger = "*"
+hyper = { version = "0.14", features = ["full"] }
+tokio = { version = "1", features = ["full"] }
+tokio-tungstenite = "0.13"
+anyhow = "*"
+sha-1 = "*"
+base64 = "*"
+log = "*"
+futures = "*"
