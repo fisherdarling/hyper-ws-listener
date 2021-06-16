@@ -74,7 +74,11 @@ pub fn create_ws(
     // `Connection: upgrade` header must valid and present
     if let Some(header_value) = req.headers().get(header::CONNECTION) {
         if let Ok(value) = header_value.to_str() {
-            if !value.eq_ignore_ascii_case("upgrade") {
+            if !value
+                .split(",")
+                .map(|s| s.trim())
+                .any(|s| s.eq_ignore_ascii_case("upgrade"))
+            {
                 *res.status_mut() = StatusCode::BAD_REQUEST;
             }
         }
